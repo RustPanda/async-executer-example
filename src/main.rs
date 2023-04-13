@@ -17,7 +17,7 @@ fn main() {
         println!("Hello world");
     });
 
-    executer.spawn(async {
+    executer.spawn(async move {
         println!("Hello world");
     });
 

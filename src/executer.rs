@@ -160,24 +160,6 @@ pub mod waker {
 
 use self::task::Task;
 
-#[derive(Clone)]
-pub struct Spawner {
-    task_sender: SyncSender<Rc<Task>>,
-}
-
-impl Spawner {
-    pub fn spawn(&self, future: impl Future<Output = ()> + 'static + Send) {
-        let future = UnsafeCell::new(Box::pin(future));
-
-        let task = Rc::new(Task {
-            future,
-            task_sender: self.task_sender.clone(),
-        });
-
-        self.task_sender.send(task).unwrap();
-    }
-}
-
 pub struct Executer {
     task_sender: SyncSender<Rc<Task>>,
     ready_queue: Receiver<Rc<Task>>,
@@ -193,12 +175,6 @@ impl Executer {
         Self {
             task_sender,
             ready_queue,
-        }
-    }
-
-    pub fn spawner(&self) -> Spawner {
-        Spawner {
-            task_sender: self.task_sender.clone(),
         }
     }
 
