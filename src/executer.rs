@@ -97,66 +97,66 @@ pub mod waker {
     }
 }
 
-mod waker_ref {
-    use std::{
-        marker::PhantomData,
-        mem::ManuallyDrop,
-        ops::Deref,
-        rc::Rc,
-        task::{RawWaker, Waker},
-    };
+// mod waker_ref {
+//     use std::{
+//         marker::PhantomData,
+//         mem::ManuallyDrop,
+//         ops::Deref,
+//         rc::Rc,
+//         task::{RawWaker, Waker},
+//     };
 
-    use super::waker::{waker_vtable, RcWake};
+//     use super::waker::{waker_vtable, RcWake};
 
-    #[derive(Debug)]
-    pub struct WakerRef<'a> {
-        waker: ManuallyDrop<Waker>,
-        _marker: PhantomData<&'a ()>,
-    }
+//     #[derive(Debug)]
+//     pub struct WakerRef<'a> {
+//         waker: ManuallyDrop<Waker>,
+//         _marker: PhantomData<&'a ()>,
+//     }
 
-    impl<'a> WakerRef<'a> {
-        /// Create a new [`WakerRef`] from a [`Waker`] reference.
-        #[inline]
-        pub fn new(waker: &'a Waker) -> Self {
-            // copy the underlying (raw) waker without calling a clone,
-            // as we won't call Waker::drop either.
-            let waker = ManuallyDrop::new(unsafe { core::ptr::read(waker) });
-            Self {
-                waker,
-                _marker: PhantomData,
-            }
-        }
+//     impl<'a> WakerRef<'a> {
+//         /// Create a new [`WakerRef`] from a [`Waker`] reference.
+//         #[inline]
+//         pub fn new(waker: &'a Waker) -> Self {
+//             // copy the underlying (raw) waker without calling a clone,
+//             // as we won't call Waker::drop either.
+//             let waker = ManuallyDrop::new(unsafe { core::ptr::read(waker) });
+//             Self {
+//                 waker,
+//                 _marker: PhantomData,
+//             }
+//         }
 
-        #[inline]
-        pub fn new_unowned(waker: ManuallyDrop<Waker>) -> Self {
-            Self {
-                waker,
-                _marker: PhantomData,
-            }
-        }
-    }
+//         #[inline]
+//         pub fn new_unowned(waker: ManuallyDrop<Waker>) -> Self {
+//             Self {
+//                 waker,
+//                 _marker: PhantomData,
+//             }
+//         }
+//     }
 
-    impl Deref for WakerRef<'_> {
-        type Target = Waker;
+//     impl Deref for WakerRef<'_> {
+//         type Target = Waker;
 
-        #[inline]
-        fn deref(&self) -> &Waker {
-            &self.waker
-        }
-    }
+//         #[inline]
+//         fn deref(&self) -> &Waker {
+//             &self.waker
+//         }
+//     }
 
-    #[inline]
-    pub fn waker_ref<W>(wake: &Rc<W>) -> WakerRef<'_>
-    where
-        W: RcWake,
-    {
-        let ptr = Rc::as_ptr(wake).cast::<()>();
+//     #[inline]
+//     pub fn waker_ref<W>(wake: &Rc<W>) -> WakerRef<'_>
+//     where
+//         W: RcWake,
+//     {
+//         let ptr = Rc::as_ptr(wake).cast::<()>();
 
-        let waker =
-            ManuallyDrop::new(unsafe { Waker::from_raw(RawWaker::new(ptr, waker_vtable::<W>())) });
-        WakerRef::new_unowned(waker)
-    }
-}
+//         let waker =
+//             ManuallyDrop::new(unsafe { Waker::from_raw(RawWaker::new(ptr, waker_vtable::<W>())) });
+//         WakerRef::new_unowned(waker)
+//     }
+// }
 
 use self::task::Task;
 
@@ -217,7 +217,7 @@ impl Executer {
         for task in self.ready_queue.try_iter() {
             let future = unsafe { &mut *task.future.get() };
 
-            let waker = waker_ref::waker_ref(&task);
+            let waker = waker::waker(task);
 
             let context = &mut Context::from_waker(&waker);
 
